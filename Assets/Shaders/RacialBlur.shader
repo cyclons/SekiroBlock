@@ -59,8 +59,6 @@ Shader "Hidden/RacialBlur"
 
 			fixed4 GetExplosionColor(float2 pos){
 				fixed4 yellow = fixed4(1,0.5,0,1);
-				//return yellow*min(-1*_Timer*_Timer*0.5+_Timer,0)*min(0.3/length(pos-_BlurCenter),1);
-				//float t = _Timer;
 				float t=_Timer*5;
 
 				return yellow*max(-1*t*t+t,0)*min(0.05/length(pos-_BlurCenter),3 );
@@ -86,8 +84,6 @@ Shader "Hidden/RacialBlur"
 				col +=tex2D(_MainTex,i.uv+dir*8) ;
 				col *=0.1;
 
-				//col = lerp(tex2D(_MainTex,i.uv),col,_BlurStrength*GetBlurPercent(i.uv)*min(0.3/length(i.uv-_BlurCenter),1));//*min(0.3/length(i.uv-_BlurCenter),1)
-				//col+=GetExplosionColor(i.uv);
 				return col;
 			}
 
@@ -115,9 +111,15 @@ Shader "Hidden/RacialBlur"
 			}
 
 			fixed4 frag_mix (v2f_lerp i) : SV_Target{
-				fixed4 oriTex = tex2D(_MainTex, i.uv1);
-				fixed4 blurTex = tex2D(_BlurTex, i.uv2);
-				fixed4 col = lerp(oriTex,blurTex,_BlurStrength*GetBlurPercent(i.uv1*float2(_Aspect,1))*min(_BlurRange/length(i.uv1*float2(_Aspect,1)-_BlurCenter),1));//*min(0.3/length(i.uv1-_BlurCenter),1)
+				fixed4 rawCol = tex2D(_MainTex, i.uv1);
+				fixed4 blurCol = tex2D(_BlurTex, i.uv2);
+				fixed4 col = lerp(rawCol,blurCol,_BlurStrength
+					//获取当前像素点在曲线上的值
+					*GetBlurPercent(i.uv1*float2(_Aspect,1))
+					//范围限制
+					*min(_BlurRange/length(i.uv1*float2(_Aspect,1)-_BlurCenter),1));
+				
+				//加点黄光
 				col+=GetExplosionColor(i.uv1*float2(_Aspect,1));
 				return col;
 			}

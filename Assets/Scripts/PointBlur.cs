@@ -15,6 +15,7 @@ public class PointBlur : MonoBehaviour {
     private Texture2D gradTexture;
     private void Start()
     {
+        //初始化振幅贴图（也就是把waveform曲线初始化到gradTexture上面）
         gradTexture = new Texture2D(2048, 1, TextureFormat.Alpha8, false);
         gradTexture.wrapMode = TextureWrapMode.Clamp;
         gradTexture.filterMode = FilterMode.Bilinear;
@@ -23,8 +24,10 @@ public class PointBlur : MonoBehaviour {
             var x = 1.0f / gradTexture.width * i;
             var a = curve.Evaluate(x);
             gradTexture.SetPixel(i, 0, new Color(a, a, a, a));
-        }//初始化振幅贴图（也就是把waveform曲线初始化到gradTexture上面）
+        }
         gradTexture.Apply();
+
+        //初始化material
         material = new Material(PointBlurShader);
         material.hideFlags = HideFlags.DontSave;
         material.SetTexture("_GradTex", gradTexture);
@@ -33,23 +36,15 @@ public class PointBlur : MonoBehaviour {
     public int downSampleFactor = 2;
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-
-
-        //Graphics.Blit(source, destination, material);
         RenderTexture rt1 = RenderTexture.GetTemporary(source.width >> downSampleFactor, source.height >> downSampleFactor, 0, source.format);
         RenderTexture rt2 = RenderTexture.GetTemporary(source.width >> downSampleFactor, source.height >> downSampleFactor, 0, source.format);
         Graphics.Blit(source, rt1);
-
-
-        //Graphics.Blit(rt1, destination, material, 0);
-
 
         //使用降低分辨率的rt进行模糊:pass0
         Graphics.Blit(rt1, rt2, material, 0);
 
         //使用rt2和原始图像lerp:pass1
         material.SetTexture("_BlurTex", rt2);
-        //material.SetFloat("_LerpFactor", lerpFactor);
         Graphics.Blit(source, destination, material, 1);
 
         //释放RT
